@@ -26,6 +26,23 @@ function checksExistsUserAccount(request, response, next) {
   next()
 }
 
+function checksExistsTodo(request, response, next) {
+  const { user, params } = request
+
+  if(!params.id) {
+    return response.status(400).json({error: "Todo id is required"})
+  } 
+
+  const todoFound = user.todos.find((todo) => todo.id === params.id)
+
+  if(!todoFound) {
+    return response.status(404).json({error: "Todo not found"})
+  }
+
+  request.todo = todoFound
+  next()
+}
+
 app.post('/users', (request, response) => {
   const {body} = request
   
@@ -74,28 +91,28 @@ app.post('/todos', checksExistsUserAccount, (request, response) => {
   return response.status(201).json(newTodo)
 });
 
-app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
-  const { user, params, body: { title, deadline } } = request
+app.put('/todos/:id', checksExistsUserAccount, checksExistsTodo, (request, response) => {
+  let { user, todo, body: { title, deadline } } = request
   
-  const todoIndex = user.todos.findIndex((todo) => todo.id === params.id)
+  const todoIndex = user.todos.indexOf(todo)
 
-  if(todoIndex === -1) {
-    return response.status(404).json({error: "Todo not found"})
-  }
-
-  const todoUpdated = {
-    ...user.todos[todoIndex],
+  user.todos[todoIndex] = {
+    ...todo,
     ...(title && { title: title }),
     ...(deadline && { deadline: new Date(deadline) })
   }
 
-  user.todos[todoIndex] = todoUpdated
-
-  return response.status(200).json(todoUpdated)
+  return response.status(200).json(user.todos[todoIndex])  
 });
 
-app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+app.patch('/todos/:id/done', checksExistsUserAccount, checksExistsTodo, (request, response) => {
+  let { user, todo } = request
+  
+  const todoIndex = user.todos.indexOf(todo)
+
+  user.todos[todoIndex].done = true 
+
+  return response.status(200).json(user.todos[todoIndex])  
 });
 
 app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
