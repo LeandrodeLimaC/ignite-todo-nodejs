@@ -33,29 +33,26 @@ app.post('/users', (request, response) => {
     return response.status(400).json({error: 'Name and Username are required'})
   }
 
-  const userFound = users.find((user) => user.username === body.username )
+  const usernameAlreadyExists = users.some((user) => user.username === body.username )
 
-  if(userFound) {
-    return response.status(400).json({error: 'Username already in use'})
+  if(usernameAlreadyExists) {
+    return response.status(400).json({error: 'Username already in use, please choose another'})
   }
 
-  const user = {
+  const newUser = {
     id: uuidv4(),
     name: body.name, 
     username: body.username, 
     todos: []
   }
 
-  users.push(user)
+  users.push(newUser)
 
-  return response.status(201).json(user)
+  return response.status(201).json(newUser)
 });
 
 app.get('/todos', checksExistsUserAccount, (request, response) => {
-  console.log('ENTROU')
   const {user} = request
-
-  console.log('user todos', user.todos)
 
   return response.json(user.todos)
 });
@@ -73,11 +70,28 @@ app.post('/todos', checksExistsUserAccount, (request, response) => {
   }
 
   user.todos.push(newTodo)
+
   return response.status(201).json(newTodo)
 });
 
 app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+  const { user, params, body: { title, deadline } } = request
+  
+  const todoIndex = user.todos.findIndex((todo) => todo.id === params.id)
+
+  if(todoIndex === -1) {
+    return response.status(404).json({error: "Todo not found"})
+  }
+
+  const todoUpdated = {
+    ...user.todos[todoIndex],
+    ...(title && { title: title }),
+    ...(deadline && { deadline: new Date(deadline) })
+  }
+
+  user.todos[todoIndex] = todoUpdated
+
+  return response.status(200).json(todoUpdated)
 });
 
 app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
