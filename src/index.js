@@ -68,6 +68,10 @@ app.post('/users', (request, response) => {
   return response.status(201).json(newUser)
 });
 
+app.get('/users', (request, response) => {
+  return response.json(users)
+})
+
 app.get('/todos', checksExistsUserAccount, (request, response) => {
   const {user} = request
 
@@ -115,8 +119,12 @@ app.patch('/todos/:id/done', checksExistsUserAccount, checksExistsTodo, (request
   return response.status(200).json(user.todos[todoIndex])  
 });
 
-app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+app.delete('/todos/:id', checksExistsUserAccount, checksExistsTodo, (request, response) => {
+  let { user, todo } = request
+
+  user.todos.splice(todo, 1)
+
+  return response.status(204).json(user.todos)  
 });
 
 module.exports = app;
